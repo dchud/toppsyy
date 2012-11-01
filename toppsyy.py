@@ -5,6 +5,12 @@ import simplejson as json
 
 API_HOST = 'http://otter.topsy.com'
 API_KEY = 'GET YOUR OWN :)'
+DEFAULT_PERPAGE = 100
+
+try:
+    from local_settings import API_KEY
+except:
+    pass
 
 
 class Result(object):
@@ -14,6 +20,8 @@ class Result(object):
         self._data = json.loads(request.content)
         self.request = self._data['request']
         self.response = self._data['response']
+        for k in self.response.keys():
+            setattr(self, k, self.response[k])
 
 
 class Topsy(object):
@@ -35,13 +43,14 @@ class Topsy(object):
         return Result(request=r)
 
     def more(self, result):
-        '''return the next page of results, if possible''' 
-        # FIXME: not working yet, needs attention
+        '''return the next page of results, if possible, or nothing''' 
+        if len(result.list) < int(result.request['parameters']['perpage']):
+            return None
         resource = result.request['resource']
         params = result.request['parameters']
-        params['page'] = params.get('page', 0) + 1
+        params['page'] = int(params.get('page', 1)) + 1
         params['offset'] = result.response['last_offset']
-        return self._get(resource, params=params)
+        return self._get(resource, **params)
 
     @property
     def remaining(self):
@@ -74,8 +83,9 @@ class Topsy(object):
         return self._get('linkpostcount', url=url, contains=contains,
             tracktype=tracktype)
 
-    def search(self, q='', window='', type=''):
-        return self._get('search', q=q, window=window, type=type)
+    def search(self, q='', **params):
+        return self._get('search', q=q, perpage=DEFAULT_PERPAGE,
+                **params)
 
     def searchcount(self, q='', dynamic=''):
         return self._get('searchcount', q=q, dynamic=dynamic)
