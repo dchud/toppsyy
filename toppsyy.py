@@ -25,6 +25,15 @@ class Result(object):
 
 
 class Topsy(object):
+    '''
+        Full API Documentation: http://code.google.com/p/otterapi/wiki/Resources
+
+        All requests are implemented via HTTP GET calls. 
+        The url of the request can be broken down into three parts: 
+        Resources (described below), response format, and query parameters. 
+        A malformed request will return a response with HTTP 400 status.
+
+    '''
     
     def __init__(self, api_key=''):
         self._api_key = api_key or API_KEY
@@ -64,45 +73,144 @@ class Topsy(object):
         return diff_hours
 
     def authorinfo(self, nick=''):
+        '''
+            
+            Profile information for an author (a twitter profile indexed by Topsy). The response contains 
+            the name, description (biography) and the influence level of the author.
+
+             nick     |  required    |  Twitter handel for the author. 
+
+        '''
         url = 'http://twitter.com/%s' % nick
         return self._get('authorinfo', url=url)
 
     def experts(self, query='', **params):
+        '''
+            
+            List of authors that talk about the query. The list is sorted by frequency of 
+            posts and the influence of authors. (Note: for backwards compatibility, 
+            the /authorsearch api method is an alias to /experts.)
+
+             q                  |  required    |  Search query string. (query syntax)  | query syntax
+             config_NoFilters   |  optional  |  Setting this to 1, would turn off all other filters. Default value is 0. 
+
+        '''
         return self._get('experts', q=query, **params)
 
     def populartrackbacks(self, url):
+        '''
+            
+            List of most popular and unique tweets (trackbacks) that mention the query URL.
+
+             url       |  required    |  URL string for the target. 
+
+        '''
         return self._get('populartrackbacks', url=url)
 
     def linkposts(self, nick='', contains='', tracktype=''):
+        '''
+            
+            List of urls posted by an author.
+
+             url       |  required    |  URL string for the author. 
+             contains  |  optional    |  A query filter for linkposts (the content must contain this string). 
+             tracktype |  optional    |  Type of posts. (image, tweet__various, self__tweet)
+
+        '''
         url = 'http://twitter.com/%s' % nick
         return self._get('linkposts', url=url, contains=contains,
             tracktype=tracktype)
 
     def linkpostcount(self, nick='', contains='', tracktype=''):
+        '''
+            
+            Count of links posted by an author. This is the efficient, count-only version of /linkposts
+
+             url       |  required    |  URL string for the author. 
+             contains  |  optional    |  Query string to filter results. 
+             tracktype |  optional    |  Type of posts. (image, tweet__various, self__tweet)
+
+        '''
         url = 'http://twitter.com/%s' % nick
         return self._get('linkpostcount', url=url, contains=contains,
             tracktype=tracktype)
 
     def search(self, q='', **params):
+        '''
+            
+            List of results for a query.
+
+             q               |  required    |  Search query string. (query syntax)  | query syntax
+             window          |  optional    |  Time window for results. (Options: dynamic (most relevant). Must be 1-23 hours or 1-100 days (h6 or d10). h: hour, d: day, w: week, m: month, a: all-time. 
+             type            |  optional    |  The type of result.  Default is nothing, which includes all types.  Other supported values are image, tweet and video | image | tweet | video
+             query_features  |  optional    |  Enables QueryFeatures described in the wiki. Only works when window=dynamic  | QueryFeatures
+
+        '''
         return self._get('search', q=q, perpage=DEFAULT_PERPAGE,
                 **params)
 
     def searchcount(self, q='', dynamic=''):
+        '''
+            
+            Count of results for a search query.
+
+             q         |  required    |  Search query string. (query syntax)  | query syntax
+             dynamic   |  optional    |  If the value equals 1, the response will contain an extra window that is the best window for the given query. The possible responses are h1 through h23, or d1 through d100. These represent hourly or daily increments. NOTE: the output format of the response will change when this parameter is used. 
+
+        '''
         return self._get('searchcount', q=q, dynamic=dynamic)
 
     def searchhistogram(self, q='', slice='86400', period='30', 
         count_method='target'):
+        '''
+            
+            The searchhistogram provides information to determine when a particular keyword peaked in the past days.
+
+             q             |  required    |  Search query string. (query syntax)  | query syntax
+             slice         |  optional    |  The number of seconds for each slice. Defaults to 86400 (1 day) 
+             period        |  optional    |  The number of slices.  Defaults to 30 (1 month) 
+             count_method  |  options     |  This has two possible values, the default is "target" and the other possible value is "citation".  count_method specifies what is being counted, "target" means the number of unique links and "citation" means the number of unique tweets about links. 
+
+        '''
         return self._get('searchhistogram', q=q, slice=slice,
             period=period, count_method=count_method)
 
     def searchdate(self, q='', window='', type='', zoom=10):
+        '''
+            
+            Returns search results sorted by reverse chronology. All options are the same as that of /search.
+
+             q        |  required    |  Search query string. (query syntax)  | query syntax
+             window   |  optional    |  See /search documentation. 
+             type     |  optional    |  See /search documentation. 
+             zoom     |  optional    |  Zoom-level for depth / quality.  Default is 10, which picks 100 results 
+
+        '''
         return self._get('search', q=q, window=window, type=type,
             zoom=zoom)
 
     def stats(self, url='', contains=''):
+        '''
+            
+            Count of tweets for a url. This is an efficient way of getting the counts only. 
+            For detailed information about a URL, use urlinfo.
+
+             url       |  required    |  URL string for the target. 
+             contains  |  optional    |  A query filter for trackbacks (the trackbacks must contain this string). 
+
+        '''
         return self._get('stats', url=url, contains=contains)
 
     def top(self, thresh='top100', type='', locale=''):
+        '''
+            
+            A feed of Top 100, 1K, 5K and 20K links, photos, tweets & videos posted on the social web everyday.
+
+             thresh    |  required    |  top100, top1k, top5k, top20k 
+             type      |  optional    |  defaults to everything. Other values: image, video, tweet 
+             locale    |  optional    |  defaults to all.  Other values:  en, ja, ko, de, pt, es, th, fr 
+
+        '''
         if thresh not in ['top100', 'top1k', 'top5k', 'top20k']:
             thresh = 'top100'
         if type not in ['', 'image', 'video', 'tweet']:
@@ -112,8 +220,25 @@ class Topsy(object):
         return self._get('top', thresh=thresh, type=type, locale=locale)
 
     def trackbacks(self, url='', contains='', ifonly='', sort_method=''):
+        '''
+            
+            List of tweets (trackbacks) that mention the query URL, most recent first.
+
+             url           |  required    |  URL for the target. 
+             contains      |  optional    |  Query string to filter results. 
+             infonly       |  optional    |  Boolean value that filters trackbacks to influential only (default 0) 
+             sort_method   |  optional    |  the order in which to return results. Options are "influence", "date" and "-date". 
+
+        '''
         return self._get('trackbacks', url=url, contains=contains,
             ifonly=ifonly, sort_method=sort_method)
 
     def urlinfo(self, url=''):
+        '''
+            
+            Information about an url.
+
+             url       |  required    |  URL string for the target. 
+
+        '''
         return self._get('urlinfo', url=url)
