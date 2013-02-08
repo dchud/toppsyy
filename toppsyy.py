@@ -19,9 +19,37 @@ class Result(object):
         self._request = request
         self._data = json.loads(request.content)
         self.request = self._data['request']
+        self.__doc__ = getattr(Topsy,self.request['resource']).__doc__
         self.response = self._data['response']
         for k in self.response.keys():
             setattr(self, k, self.response[k])
+
+    def __str__(self):
+        string = 'Topsy "%s" Result:\n-----KEYS-----\n' % self.request['resource']
+        string += '\n'.join(self.response.keys())
+        return string
+
+    def __repr__(self):
+        return json.dumps(self.response, indent=4)
+
+    def more(self):
+        if len(self.list) >= int(self.total):
+            return None
+        params = self.request['parameters']
+        params['page'] = int(self.page) + 1
+        params['offset'] = self.last_offset
+        params['apikey'] = API_KEY
+        url = self.request['url'].split('?')[0]
+        request = requests.get(url, params=params)
+        self._request = request
+        self._data = json.loads(request.content)
+        self.request = self._data['request']
+        self.response = self._data['response']
+        for k in self.response.keys():
+            if k == 'list':
+                setattr(self, k, getattr(self, k) + self.response[k])
+            else:
+                setattr(self, k, self.response[k])
 
 
 class Topsy(object):
@@ -53,7 +81,7 @@ class Topsy(object):
 
     def more(self, result):
         '''return the next page of results, if possible, or nothing''' 
-        if len(result.list) < int(result.request['parameters']['perpage']):
+        if len(result.list) < int(result.perpage):
             return None
         resource = result.request['resource']
         params = result.request['parameters']
